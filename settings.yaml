@@ -1,0 +1,9 @@
+swarm:
+  url: "http://localhost:1633"
+  postage_batch_id: ""
+  tag: #12345  # Optional, should be an integer # not tested if it works, probably does not 
+  number_of_chunks: 100  # Number of chunks to upload
+  record_to_file: "references.csv"  # File to record chunk references
+  write_mode: "append"  # Options: "append" or "newFile"
+  record_downloads_to_file: "download_logs.csv"
+  write_mode_downloads: "append"  # Options: "append" or "newFile"
