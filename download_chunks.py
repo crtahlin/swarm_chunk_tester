@@ -3,6 +3,10 @@ import csv
 import yaml
 from datetime import datetime
 import os
+import time
+
+max_retries = 20
+sleep_duration = 10
 
 # Load settings from the YAML file
 with open('settings.yaml', 'r') as f:
@@ -29,26 +33,43 @@ with open(csv_file, file_mode, newline='') as f:
 # Download chunks from Swarm
 try:
     for ref in references:
-        print(f"Downloading chunk with reference {ref} ....", end=" ", flush=True)
-        url = f"http://localhost:1633/chunks/{ref}"
+        for retry in range(max_retries):
+            print(f"Downloading chunk with reference {ref} ....", end=" ", flush=True)
+            url = f"http://localhost:1633/chunks/{ref}"
 
-        start_time = datetime.utcnow()
-        start_timestamp = start_time.isoformat()
 
-        response = requests.get(url)
-        
-        end_time = datetime.utcnow()
-        end_timestamp = end_time.isoformat()
 
-        response_time = (end_time - start_time).total_seconds()
-        
-        print(f"{response.status_code}, Time: {response_time:.4f} seconds")
+            try:
+                start_time = datetime.utcnow()
+                start_timestamp = start_time.isoformat()
+                
+                response = requests.get(url)
+                
+                end_time = datetime.utcnow()
+                end_timestamp = end_time.isoformat()
 
-        # Log download data
-        with open(csv_file, 'a', newline='') as f:
-            writer = csv.writer(f, escapechar='\\', quoting=csv.QUOTE_ALL)
-            writer.writerow([ref, start_timestamp, end_timestamp, response_time, response.status_code])
+                response_time = (end_time - start_time).total_seconds()
+                print(f"{response.status_code}, Time: {response_time:.4f} seconds")
 
+                # Log download data
+                with open(csv_file, 'a', newline='') as f:
+                    writer = csv.writer(f, escapechar='\\', quoting=csv.QUOTE_ALL)
+                    writer.writerow([ref, start_timestamp, end_timestamp, response_time, response.status_code])
+                
+                break  # Break the retry loop if successful
+            except requests.exceptions.RequestException:
+                print("Failed. Retrying...")
+                time.sleep(sleep_duration)
+                continue
+
+            print(f"{response.status_code}, Time: {response_time:.4f} seconds")
+            # print("\n", end="", flush=True)
+
+            # Log download data
+            with open(csv_file, 'a', newline='') as f:
+                writer = csv.writer(f, escapechar='\\', quoting=csv.QUOTE_ALL)
+                writer.writerow([ref, start_timestamp, end_timestamp, response_time, response.status_code])
+                
 except KeyboardInterrupt:
     print("Script interrupted. Closing CSV file.")
 
